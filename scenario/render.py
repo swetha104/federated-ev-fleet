@@ -2,9 +2,9 @@
 
 Re-runs a time window of a built scenario headless, records each car's
 position and battery level every few seconds, and draws them over the road
-network: dots are cars coloured by vehicle model (the 7 types are what makes
-the clients non-IID), ringed in white while charging; triangles are the
-charging stations.
+network: dots are cars coloured by battery class (small/mid/large, the same
+grouping as the README figures), ringed in white while charging; triangles are
+the charging stations.
 
     python scenario/render.py --data-dir data/cs --out docs/media/fleet.gif
 """
@@ -51,10 +51,13 @@ def station_positions(stations_path: Path, net_path: Path) -> list:
             for cs in ET.parse(stations_path).getroot().iter("chargingStation") if cs.get("lane") in lanes]
 
 
-# One colour per EV model in scenario/vehicles.add.xml.
-TYPE_COLORS = {
-    "BMW_i3": "#4e79a7", "SUV": "#f28e2b", "VW_ID3": "#e15759", "VW_ID4": "#76b7b2",
-    "VW_eUp": "#59a14f", "Kia_EV6_GT": "#b07aa1", "soulEV65": "#ff9da7",
+# The 7 EV models in scenario/vehicles.add.xml, grouped by battery size into three
+# classes; dark-surface steps of the same palette as scripts/figures.py.
+CLASS_COLORS = {"small (32–39 kWh)": "#3987e5", "mid (58–64 kWh)": "#d95926", "large (77–80 kWh)": "#199e70"}
+TYPE_CLASS = {
+    "VW_eUp": "small (32–39 kWh)", "BMW_i3": "small (32–39 kWh)",
+    "VW_ID3": "mid (58–64 kWh)", "soulEV65": "mid (58–64 kWh)",
+    "VW_ID4": "large (77–80 kWh)", "Kia_EV6_GT": "large (77–80 kWh)", "SUV": "large (77–80 kWh)",
 }
 
 
@@ -108,21 +111,21 @@ def main() -> None:
     ax.set_facecolor("#111418")
     ax.add_collection(LineCollection(roads, colors="#3a4048", linewidths=0.3))
     ax.scatter(*zip(*stations), marker="^", s=45, c="#9aa5b1", edgecolors="none", zorder=3, label="charging station")
-    for name, color in TYPE_COLORS.items():
-        ax.scatter([], [], s=20, c=color, label=name.replace("_", " "))
+    for name, color in CLASS_COLORS.items():
+        ax.scatter([], [], s=20, c=color, label=name)
     ax.scatter([], [], s=40, facecolors="none", edgecolors="#ffffff", linewidths=1.2, label="charging now")
     cars = ax.scatter([], [], s=16, zorder=4)
     ax.autoscale()
     ax.set_aspect("equal")
     ax.axis("off")
     title = ax.set_title("", color="#e6e6e6", fontsize=11, loc="left")
-    ax.legend(loc="lower right", facecolor="#1d2228", edgecolor="none", labelcolor="#e6e6e6", fontsize=7, ncol=2)
+    ax.legend(loc="lower right", facecolor="#1d2228", edgecolor="none", labelcolor="#e6e6e6", fontsize=8)
     fig.tight_layout()
 
     def draw(i):
         rows = frames[times[i]]
         cars.set_offsets([(x, y) for x, y, _, _ in rows] or [(float("nan"), float("nan"))])
-        cars.set_facecolors([TYPE_COLORS.get(t, "#cccccc") for _, _, t, _ in rows])
+        cars.set_facecolors([CLASS_COLORS[TYPE_CLASS[t]] if t in TYPE_CLASS else "#cccccc" for _, _, t, _ in rows])
         cars.set_edgecolors(["#ffffff" if charging else "none" for *_, charging in rows])
         cars.set_linewidths([1.2 if charging else 0 for *_, charging in rows])
         cars.set_sizes([40 if charging else 16 for *_, charging in rows])

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,7 @@ name = "evfl"
 version = "2.0.0.dev0"
 description = "Federated learning on simulated EV fleet data (v2 of a 2022 master thesis)"
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = [
     "flwr[simulation]>=1.42,<2",
