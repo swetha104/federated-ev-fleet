@@ -1,0 +1,8 @@
+,timestep_time,vehicle_acceleration,vehicle_actualBatteryCapacity,vehicle_chargingStationId,vehicle_energyCharged,vehicle_energyChargedInTransit,vehicle_energyChargedStopped,vehicle_energyConsumed,vehicle_id,vehicle_lane,vehicle_maximumBatteryCapacity,vehicle_posOnLane,vehicle_speed,vehicle_timeStopped,vehicle_totalEnergyConsumed,vehicle_totalEnergyRegenerated,vehicle_x,vehicle_y,vehicle_type
+0,0.0,0.0,32000.0,,0.0,0.0,0.0,0.0,0.0,23435862#15_0,64000.0,5.1,0.0,0.0,0.0,0.0,12532.2604,4758.6699,soulEV65
+1,1.0,1.0,31999.6613,,0.0,0.0,0.0,0.3387,0.0,23435862#15_0,64000.0,6.1,1.0,0.0,0.3387,0.0,12532.9977,4759.3444,soulEV65
+2,2.0,1.0,31998.7519,,0.0,0.0,0.0,0.9094,0.0,23435862#15_0,64000.0,8.1,2.0,0.0,1.2481,0.0,12534.4724,4760.6933,soulEV65
+3,3.0,0.6656,31997.7795,,0.0,0.0,0.0,0.9724,0.0,:cluster_2494032248_8230443580_8_0,64000.0,0.1056,2.6656,0.0,2.2205,0.0,12536.438,4762.4913,soulEV65
+4,4.0,0.0,31997.6125,,0.0,0.0,0.0,0.167,0.0,:cluster_2494032248_8230443580_8_0,64000.0,2.7712,2.6656,0.0,2.3875,0.0,12538.4074,4764.2901,soulEV65
+5,5.0,0.0,31997.4455,,0.0,0.0,0.0,0.167,0.0,:cluster_2494032248_8230443580_8_0,64000.0,5.4368,2.6656,0.0,2.5545,0.0,12540.3768,4766.089,soulEV65
+6,6.0,0.0,31997.2785,,0.0,0.0,0.0,0.167,0.0,:cluster_2494032248_8230443580_8_0,64000.0,8.1024,2.6656,0.0,2.7215,0.0,12542.3463,4767.8879,soulEV65
