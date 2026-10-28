@@ -50,7 +50,8 @@ def section_main(kind: str, prefix: str, unit: str) -> list[str]:
         (f"{prefix}-fedavg-e5", "FedAvg, 5 local epochs", "global model"),
     ]:
         run = load(name)
-        lines.append(row(label, stats(final_clients(run)) if run else None, note))
+        if run:  # not every configuration is run for every use case
+            lines.append(row(label, stats(final_clients(run)), note))
     for name in (f"{prefix}-fedavg-e5-ft", f"{prefix}-fedavg-ft"):
         run = load(name)
         if not run:

@@ -95,6 +95,7 @@ def main() -> None:
     p.add_argument("--end", type=int, default=9 * 3600)
     p.add_argument("--period", type=int, default=30, help="simulated seconds per frame")
     p.add_argument("--fps", type=int, default=12)
+    p.add_argument("--dpi", type=int, default=65, help="lower keeps the GIF small enough for a README")
     args = p.parse_args()
 
     if shutil.which("sumo") is None:
@@ -106,7 +107,7 @@ def main() -> None:
     frames = record(args.data_dir, args.begin, args.end, args.period)
     times = list(frames)
 
-    fig, ax = plt.subplots(figsize=(7, 7), dpi=90)
+    fig, ax = plt.subplots(figsize=(7, 7), dpi=args.dpi)
     fig.patch.set_facecolor("#111418")
     ax.set_facecolor("#111418")
     ax.add_collection(LineCollection(roads, colors="#3a4048", linewidths=0.3))
