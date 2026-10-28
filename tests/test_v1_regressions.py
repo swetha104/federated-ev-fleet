@@ -28,7 +28,7 @@ def fake_ev_csv(tmp_path, steps=400, vehicles=("0", "1")):
 def test_ev_inputs_are_sequences_without_cumulative_energy():
     steps = np.random.default_rng(1).uniform(0, 5, size=(200, 3)).astype(np.float32)
     x, y = ev_windows(steps, EVTask())
-    assert x.shape[1:] == (EVTask().window, 3)  # v1 used sequence length 1
+    assert x.shape[1:] == (EVTask().window + EVTask().horizon, 4)  # v1 used sequence length 1
     # Target is future energy only: changing past energy must not change the first target.
     steps2 = steps.copy()
     steps2[: EVTask().window, 2] += 100
@@ -60,7 +60,7 @@ def test_too_little_data_is_an_explicit_failure(tmp_path):
 
 
 def test_dp_accounts_true_sampling_rate_and_accumulates_over_rounds():
-    data = TensorDataset(torch.randn(200, 30, 3), torch.randn(200, 1))
+    data = TensorDataset(torch.randn(200, 60, 4), torch.randn(200, 1))
     loader = DataLoader(data, batch_size=50)
     history = []
     epsilons = []
