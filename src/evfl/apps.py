@@ -53,6 +53,12 @@ class RunConfig:
         return self.dp_noise > 0
 
 
+def epsilon_so_far(state: RecordDict, delta: float) -> float:
+    """Privacy spent by this client across all rounds it trained in (0.0 before its first)."""
+    record = state.config_records.get("dp", ConfigRecord({"noise": [], "rate": [], "steps": []}))
+    return epsilon_of(list(zip(record["noise"], record["rate"], record["steps"])), delta)
+
+
 def make_client_app(cfg: RunConfig) -> ClientApp:
     app = ClientApp()
     ids = client_ids(cfg.kind, Path(cfg.data_dir))[: cfg.num_clients]
@@ -104,9 +110,10 @@ def make_client_app(cfg: RunConfig) -> ClientApp:
             train(personal, train_loader, cfg.finetune_epochs, cfg.lr)
             tuned = evaluate(personal, test_loader, target_scale(cfg.kind))
             metrics.update({f"{k}-ft": v for k, v in tuned.items() if k != "num-examples"})
-        if cfg.dp and "dp" in context.state.config_records:
-            state = context.state.config_records["dp"]
-            metrics["epsilon"] = epsilon_of(list(zip(state["noise"], state["rate"], state["steps"])), cfg.dp_delta)
+        if cfg.dp:
+            # Every client reports the key (0 if it has not trained yet): Flower only
+            # aggregates MetricRecords that share the same keys.
+            metrics["epsilon"] = epsilon_so_far(context.state, cfg.dp_delta)
         return Message(content=RecordDict({"metrics": MetricRecord(metrics)}), reply_to=msg)
 
     return app

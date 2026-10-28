@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
+viz = ["matplotlib>=3.8", "pillow>=10"]  # scenario/render.py
 
 [tool.setuptools.packages.find]
 where = ["src"]
