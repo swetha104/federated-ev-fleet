@@ -4,6 +4,8 @@ import torch
 from opacus.layers import DPLSTM
 from torch import nn
 
+from evfl.data import EV_FEATURES
+
 
 class Forecaster(nn.Module):
     """Sequence (batch, steps, features) -> one value.
@@ -24,4 +26,4 @@ class Forecaster(nn.Module):
 
 
 def build_model(kind: str, dp: bool = False) -> Forecaster:
-    return Forecaster(input_size=3 if kind == "ev" else 1, dp=dp)
+    return Forecaster(input_size=EV_FEATURES if kind == "ev" else 1, dp=dp)

@@ -113,6 +113,24 @@ def place_charging_stations(net_path: Path, out_path: Path, count: int, seed: in
     ET.ElementTree(root).write(out_path, encoding="utf-8", xml_declaration=True)
 
 
+def add_charging_stops(trips_path: Path, stations_path: Path, fraction: float, duration: tuple, seed: int) -> None:
+    """Send a share of trips via a random charging station, where they stop to charge.
+
+    Without this, EVs only charge in transit while driving over a 10 m station
+    (about one second per pass), which leaves the stations with almost no demand.
+    """
+    stations = [(cs.get("id"), cs.get("lane").rsplit("_", 1)[0])
+                for cs in ET.parse(stations_path).getroot().iter("chargingStation")]
+    rng = random.Random(seed)
+    tree = ET.parse(trips_path)
+    for trip in tree.getroot().iter("trip"):
+        if rng.random() < fraction:
+            cs_id, edge = rng.choice(stations)
+            trip.set("via", edge)
+            ET.SubElement(trip, "stop", {"chargingStation": cs_id, "duration": str(rng.randint(*duration))})
+    tree.write(trips_path, encoding="utf-8", xml_declaration=True)
+
+
 def battery_to_csv(xml_path: Path, csv_path: Path) -> int:
     """Flatten SUMO battery-output (one row per vehicle per step) for use case (a)."""
     fields = ["time", "vehicle_id", "speed", "acceleration", "energyConsumed",
@@ -136,16 +154,20 @@ def battery_to_csv(xml_path: Path, csv_path: Path) -> int:
 
 
 def charging_to_csv(xml_path: Path, csv_path: Path) -> int:
-    """Flatten SUMO chargingstations-output (one row per charging step) for use case (b)."""
+    """Flatten SUMO chargingstations-output (one row per charging step) for use case (b).
+
+    Uses `energyCharged` (Wh in this step). `partialCharge` is the running total of the
+    session, so summing it (as v1 did) overcounts the delivered energy.
+    """
     rows = 0
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["chargingStation_id", "vehicle_id", "vehicle_type", "time", "partialCharge"])
+        writer.writerow(["chargingStation_id", "vehicle_id", "vehicle_type", "time", "energyCharged"])
         for station in ET.parse(xml_path).getroot().iter("chargingStation"):
             for vehicle in station.iter("vehicle"):
                 for step in vehicle.iter("step"):
                     writer.writerow([station.get("id"), vehicle.get("id"), vehicle.get("type"),
-                                     step.get("time"), step.get("partialCharge")])
+                                     step.get("time"), step.get("energyCharged")])
                     rows += 1
     return rows
 
@@ -157,6 +179,12 @@ def main() -> None:
     p.add_argument("--end", type=int, default=101000, help="last departure time in s (thesis: 101000)")
     p.add_argument("--period", type=float, default=100, help="s between departures (thesis: 100)")
     p.add_argument("--cs", type=int, default=50, help="number of charging stations")
+    p.add_argument("--charge-fraction", type=float, default=0.0,
+                   help="share of trips that detour to a charging station and stop there")
+    p.add_argument("--stop-min", type=int, default=600, help="shortest charging stop in s")
+    p.add_argument("--stop-max", type=int, default=2700, help="longest charging stop in s")
+    p.add_argument("--no-battery-output", dest="battery_output", action="store_false",
+                   help="skip the per-step battery log (large); enough for the charging-station use case")
     p.add_argument("--seed", type=int, default=42)
     args = p.parse_args()
 
@@ -178,15 +206,23 @@ def main() -> None:
     if not stations.exists():
         place_charging_stations(net, stations, args.cs, args.seed, tools)
     if not routes.exists():
-        run([sys.executable, tools / "randomTrips.py", "-n", net, "-o", trips, "-r", routes,
-             "-e", args.end, "--period", args.period, "--fringe-factor", 1, "--seed", args.seed,
-             "--additional-file", HERE / "vehicles.add.xml",
-             "--trip-attributes", 'type="typedist1"', "--validate"])
-    if not battery_xml.exists():
-        # The route file already carries the vehicle types (randomTrips copies them in).
+        trip_args = ["-n", net, "-o", trips, "-e", args.end, "--period", args.period, "--fringe-factor", 1,
+                     "--seed", args.seed, "--additional-file", HERE / "vehicles.add.xml",
+                     "--trip-attributes", 'type="typedist1"']
+        if args.charge_fraction == 0:
+            run([sys.executable, tools / "randomTrips.py", *trip_args, "-r", routes, "--validate"])
+        else:
+            run([sys.executable, tools / "randomTrips.py", *trip_args])
+            add_charging_stops(trips, stations, args.charge_fraction, (args.stop_min, args.stop_max), args.seed)
+            run(["duarouter", "-n", net, "--route-files", trips, "-o", routes,
+                 "-a", f"{HERE / 'vehicles.add.xml'},{stations}", "--ignore-errors", "--no-warnings"])
+
+    done_marker = battery_xml if args.battery_output else charging_xml
+    if not done_marker.exists():
+        # The route file already carries the vehicle types (randomTrips/duarouter copy them in).
+        outputs = ["--battery-output", battery_xml, "--battery-output.precision", 4] if args.battery_output else []
         try:
-            run(["sumo", "-n", net, "-r", routes, "-a", stations,
-                 "--battery-output", battery_xml, "--battery-output.precision", 4,
+            run(["sumo", "-n", net, "-r", routes, "-a", stations, *outputs,
                  "--chargingstations-output", charging_xml,
                  "--device.battery.probability", 1, "--seed", args.seed,
                  "--no-step-log", "--no-warnings", "--duration-log.statistics"])
@@ -196,7 +232,8 @@ def main() -> None:
             charging_xml.unlink(missing_ok=True)
             raise
 
-    print(f"EV rows: {battery_to_csv(battery_xml, out / 'ev.csv'):,}")
+    if args.battery_output:
+        print(f"EV rows: {battery_to_csv(battery_xml, out / 'ev.csv'):,}")
     print(f"CS rows: {charging_to_csv(charging_xml, out / 'cs.csv'):,}")
 
 

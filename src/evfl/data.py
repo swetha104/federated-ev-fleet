@@ -24,19 +24,26 @@ from torch.utils.data import DataLoader, TensorDataset
 SPEED_SCALE = 40.0  # m/s
 ACCEL_SCALE = 5.0  # m/s^2
 ENERGY_STEP_SCALE = 10.0  # Wh per 1 s step
-CS_ENERGY_SCALE = 500.0  # Wh per bin
+CS_ENERGY_SCALE = 5000.0  # Wh per bin (22 kW for 15 min is 5.5 kWh)
 
 
 @dataclass(frozen=True)
 class EVTask:
-    """Forecast the energy an EV draws over the next `horizon` seconds.
+    """Estimate the energy an EV needs for the next `horizon` seconds of a planned speed profile.
 
-    Remaining capacity at t+horizon is the current capacity (known from the
-    BMS) minus this value, so the error in Wh is the same for both.
+    Input: the last `window` seconds as driven (speed, acceleration, energy),
+    which tell the model what kind of vehicle this is, followed by the planned
+    `horizon` seconds (speed and acceleration only; energy is what we predict).
+    Remaining capacity at the end of the stretch is the current capacity (known
+    from the BMS) minus this value, so the error in Wh is the same for both.
+
+    An earlier v2 draft predicted the next seconds' energy from history alone;
+    that depends on what the driver does next, and even a centralized model
+    could not learn it (median R² < 0).
     """
 
     window: int = 30
-    horizon: int = 10
+    horizon: int = 30
     stride: int = 5
     test_fraction: float = 0.2
     min_windows: int = 20
@@ -73,7 +80,7 @@ def load_cs(path: str, bin_seconds: int) -> dict[str, np.ndarray]:
     for station, g in df.groupby("chargingStation_id", sort=True):
         # Energy per bin, with empty bins as zero: the station exists even when nobody charges.
         bins = np.zeros(n_bins, np.float32)
-        np.add.at(bins, (g["time"].to_numpy() // bin_seconds).astype(int), g["partialCharge"].to_numpy(np.float32))
+        np.add.at(bins, (g["time"].to_numpy() // bin_seconds).astype(int), g["energyCharged"].to_numpy(np.float32))
         series[str(station)] = bins
     return series
 
@@ -84,14 +91,21 @@ def client_ids(kind: str, data_dir: Path) -> list[str]:
     return list(load_cs(str(data_dir / "cs.csv"), CSTask().bin_seconds))
 
 
+EV_FEATURES = 4  # speed, acceleration, energy (0 in the planned part), is-planned flag
+
+
 def ev_windows(steps: np.ndarray, task: EVTask) -> tuple[np.ndarray, np.ndarray]:
     scaled = steps / np.array([SPEED_SCALE, ACCEL_SCALE, ENERGY_STEP_SCALE], np.float32)
+    length = task.window + task.horizon
     xs, ys = [], []
-    for start in range(0, len(steps) - task.window - task.horizon + 1, task.stride):
-        end = start + task.window
-        xs.append(scaled[start:end])
-        ys.append(steps[end:end + task.horizon, 2].sum() / (ENERGY_STEP_SCALE * task.horizon))
-    return np.asarray(xs, np.float32).reshape(-1, task.window, 3), np.asarray(ys, np.float32).reshape(-1, 1)
+    for start in range(0, len(steps) - length + 1, task.stride):
+        seq = np.zeros((length, EV_FEATURES), np.float32)
+        seq[:, :3] = scaled[start:start + length]
+        seq[task.window:, 2] = 0.0  # future energy is the target, never an input
+        seq[task.window:, 3] = 1.0
+        xs.append(seq)
+        ys.append(steps[start + task.window:start + length, 2].sum() / (ENERGY_STEP_SCALE * task.horizon))
+    return np.asarray(xs, np.float32).reshape(-1, length, EV_FEATURES), np.asarray(ys, np.float32).reshape(-1, 1)
 
 
 def cs_windows(series: np.ndarray, task: CSTask) -> tuple[np.ndarray, np.ndarray]:
