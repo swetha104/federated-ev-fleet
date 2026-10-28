@@ -63,11 +63,13 @@ def make_client_app(cfg: RunConfig) -> ClientApp:
     app = ClientApp()
     ids = client_ids(cfg.kind, Path(cfg.data_dir))[: cfg.num_clients]
 
-    def setup(msg: Message, context: Context):
+    def setup(msg: Message, context: Context, can_drop: bool):
         pid = int(context.node_config["partition-id"])
         server_round = int(msg.content["config"]["server-round"])
         # Seeded per (run seed, round, client), so a dropout scenario is reproducible.
-        if random.Random(f"{cfg.seed}-{server_round}-{pid}").random() < cfg.dropout:
+        # Only training drops out: evaluation must score the same clients in every run,
+        # or runs with different dropout rates are measured on different subsets.
+        if can_drop and random.Random(f"{cfg.seed}-{server_round}-{pid}").random() < cfg.dropout:
             raise ClientDropout(f"client {ids[pid]} dropped out in round {server_round}")
         train_loader, test_loader = client_loaders(cfg.kind, ids[pid], Path(cfg.data_dir), cfg.batch_size)
         model = build_model(cfg.kind, dp=cfg.dp)
@@ -76,7 +78,7 @@ def make_client_app(cfg: RunConfig) -> ClientApp:
 
     @app.train()
     def train_fn(msg: Message, context: Context) -> Message:
-        pid, model, train_loader, _ = setup(msg, context)
+        pid, model, train_loader, _ = setup(msg, context, can_drop=True)
         torch.manual_seed(cfg.seed + pid)
         metrics = {"num-examples": len(train_loader.dataset), "partition-id": pid}
         if cfg.dp:
@@ -99,7 +101,7 @@ def make_client_app(cfg: RunConfig) -> ClientApp:
 
     @app.evaluate()
     def evaluate_fn(msg: Message, context: Context) -> Message:
-        pid, model, train_loader, test_loader = setup(msg, context)
+        pid, model, train_loader, test_loader = setup(msg, context, can_drop=False)
         metrics = evaluate(model, test_loader, target_scale(cfg.kind))
         metrics["partition-id"] = pid
         if cfg.finetune_epochs > 0:

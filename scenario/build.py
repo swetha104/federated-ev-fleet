@@ -92,7 +92,8 @@ def place_charging_stations(net_path: Path, out_path: Path, count: int, seed: in
         for edge in net.getEdges()
         if edge.allows("passenger") and edge.getFunction() == ""
         for lane in edge.getLanes()
-        if lane.allows("passenger") and lane.getLength() > 30
+        # Rightmost lane only: cars can reach it to stop, and it matches where real chargers sit.
+        if lane.getIndex() == 0 and lane.allows("passenger") and lane.getLength() > 30
     ]
     rng = random.Random(seed)
     root = ET.Element("additional")
@@ -127,7 +128,8 @@ def add_charging_stops(trips_path: Path, stations_path: Path, fraction: float, d
         if rng.random() < fraction:
             cs_id, edge = rng.choice(stations)
             trip.set("via", edge)
-            ET.SubElement(trip, "stop", {"chargingStation": cs_id, "duration": str(rng.randint(*duration))})
+            # parking="true" takes the car off the lane; on-lane stops of 10-45 min jam the whole city.
+            ET.SubElement(trip, "stop", {"chargingStation": cs_id, "duration": str(rng.randint(*duration)), "parking": "true"})
     tree.write(trips_path, encoding="utf-8", xml_declaration=True)
 
 
