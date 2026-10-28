@@ -9,7 +9,9 @@ This is **v2** of the code from my master thesis,
 which Flower features on its [automotive page](https://flower.ai/industries/automotive).
 The original code is preserved unchanged at tag [`v1.0-thesis`](../../tree/v1.0-thesis).
 
-![Simulated fleet: cars coloured by EV model, white rings while charging, grey triangles are charging stations](docs/media/fleet.gif)
+<!-- fleet animation: added once rendered
+![Simulated fleet: cars coloured by battery class, white rings while charging, grey triangles are charging stations](docs/media/fleet.gif)
+-->
 
 All data is **simulated** with [SUMO](https://eclipse.dev/sumo/) on OpenStreetMap roads. No real vehicle data is used.
 
@@ -33,7 +35,7 @@ pip install -e ".[dev,viz]"
 # 1. Simulate the data (needs SUMO: brew install sumo / apt install sumo)
 python scenario/build.py --out data                                   # EVs, ~10 min
 python scenario/build.py --out data/cs --end 172800 --period 50 \
-       --charge-fraction 0.5 --no-battery-output                      # charging stations, 2 days
+       --charge-fraction 0.5 --no-battery-output --daily-profile      # charging stations, 2 days
 
 # 2. One federated run
 python -m evfl.run --kind ev --num-clients 50 --rounds 40 --local-epochs 5 --finetune-epochs 5

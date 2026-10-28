@@ -31,14 +31,29 @@ DEFAULT_BBOX = (48.79, 9.05, 48.97, 9.34)  # south, west, north, east
 
 OVERPASS_SERVERS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
 
-# Labels the thesis used for charging-station regions; stations get the nearest one.
+# Places inside DEFAULT_BBOX; each charging station is named after the nearest one.
+# (v1's labels, e.g. Esslingen or Sindelfingen, lie outside the area its routes cover.)
 DISTRICTS = {
-    "Mitte": (48.7758, 9.1829),
-    "Lud": (48.8974, 9.1916),
-    "Esl": (48.7406, 9.3108),
-    "Sind": (48.7133, 9.0028),
-    "Renn": (48.7656, 8.9346),
+    "Ludwigsburg": (48.8974, 9.1916),
+    "Kornwestheim": (48.8616, 9.1847),
+    "Remseck": (48.8737, 9.2726),
+    "Zuffenhausen": (48.8327, 9.1717),
+    "Feuerbach": (48.8148, 9.1576),
+    "Weilimdorf": (48.8179, 9.1082),
+    "Ditzingen": (48.8263, 9.0670),
+    "BadCannstatt": (48.8056, 9.2148),
+    "Fellbach": (48.8094, 9.2758),
 }
+
+# Relative trips per hour of day (weekday shape: night trough, morning and evening peaks).
+DAILY_PROFILE = [0.15, 0.10, 0.08, 0.08, 0.12, 0.30, 0.70, 1.00, 0.95, 0.70, 0.60, 0.65,
+                 0.70, 0.70, 0.75, 0.85, 0.95, 1.00, 0.85, 0.60, 0.45, 0.35, 0.25, 0.20]
+
+
+def hourly_periods(mean_period: float, end: int) -> list[float]:
+    """randomTrips periods, one per hour, that follow DAILY_PROFILE and average `mean_period`."""
+    mean_weight = sum(DAILY_PROFILE) / len(DAILY_PROFILE)
+    return [round(mean_period * mean_weight / DAILY_PROFILE[h % 24], 2) for h in range(-(-end // 3600))]
 
 
 def sumo_tools() -> Path:
@@ -187,6 +202,8 @@ def main() -> None:
     p.add_argument("--stop-max", type=int, default=2700, help="longest charging stop in s")
     p.add_argument("--no-battery-output", dest="battery_output", action="store_false",
                    help="skip the per-step battery log (large); enough for the charging-station use case")
+    p.add_argument("--daily-profile", action="store_true",
+                   help="vary departures over the day (rush hours) instead of a constant --period")
     p.add_argument("--seed", type=int, default=42)
     args = p.parse_args()
 
@@ -208,7 +225,10 @@ def main() -> None:
     if not stations.exists():
         place_charging_stations(net, stations, args.cs, args.seed, tools)
     if not routes.exists():
-        trip_args = ["-n", net, "-o", trips, "-e", args.end, "--period", args.period, "--fringe-factor", 1,
+        periods = hourly_periods(args.period, args.end) if args.daily_profile else [args.period]
+        # randomTrips splits [0, end) into equal intervals, one per period value: hours here.
+        end = len(periods) * 3600 if args.daily_profile else args.end
+        trip_args = ["-n", net, "-o", trips, "-e", end, "--period", *periods, "--fringe-factor", 1,
                      "--seed", args.seed, "--additional-file", HERE / "vehicles.add.xml",
                      "--trip-attributes", 'type="typedist1"']
         if args.charge_fraction == 0:

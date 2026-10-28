@@ -235,6 +235,69 @@ def fig_dropout() -> None:
     save(fig, "dropout.png")
 
 
+BLUES = ["#fcfcfb", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]  # sequential ramp
+
+
+def fig_cs_demand(cs_dir: Path) -> None:
+    """Energy delivered per station and 15-minute slot over the two simulated days."""
+    if not (cs_dir / "cs.csv").exists():
+        return
+    from matplotlib.colors import LinearSegmentedColormap
+
+    from evfl.data import load_cs
+
+    series = load_cs(str(cs_dir / "cs.csv"), 900)
+    names = sorted(series, key=lambda n: (n.split("_cs_")[0], int(n.split("_cs_")[1])))
+    grid = np.stack([series[n] for n in names]) / 1000  # kWh per 15 min
+    hours = np.arange(grid.shape[1]) * 0.25
+
+    fig, (ax, ax2) = plt.subplots(2, 1, figsize=(11, 7.2), sharex=True, gridspec_kw={"height_ratios": [3.2, 1]})
+    cmap = LinearSegmentedColormap.from_list("blues", BLUES)
+    im = ax.imshow(grid, aspect="auto", cmap=cmap, interpolation="nearest",
+                   extent=[0, hours[-1] + 0.25, len(names), 0], vmin=0, vmax=np.percentile(grid[grid > 0], 98))
+    districts = [n.split("_cs_")[0] for n in names]
+    starts = [i for i, d in enumerate(districts) if i == 0 or d != districts[i - 1]]
+    for i in starts[1:]:
+        ax.axhline(i, color=SURFACE, linewidth=2)
+    ax.set_yticks([(s + e) / 2 for s, e in zip(starts, starts[1:] + [len(names)])])
+    ax.set_yticklabels([f"{districts[s]} ({e - s})" for s, e in zip(starts, starts[1:] + [len(names)])])
+    ax.grid(False)
+    ax.set_title("Charging demand per station (district, number of stations) — the clients of use case (b)")
+    fig.colorbar(im, ax=ax, fraction=0.02, pad=0.01).set_label("kWh per 15 min", color=INK_2)
+
+    total = grid.sum(axis=0)
+    ax2.fill_between(hours, total, step="post", color=BLUES[4], alpha=0.85, linewidth=0)
+    ax2.set_ylabel("all stations\n(kWh / 15 min)")
+    ax2.set_xlabel("simulated time (hours)")
+    ax2.set_xticks(range(0, 49, 6))
+    for day in (24, 48):
+        ax2.axvline(day, color=MUTED, linewidth=1, linestyle=(0, (4, 3)))
+    fig.tight_layout()
+    save(fig, "cs_demand.png")
+
+
+def fig_cs_per_station() -> None:
+    base, run = load("cs-baselines"), load("cs-fedavg-ft")
+    if not (base and run):
+        return
+    last = {c["client"]: c for c in [r for r in run["rounds"] if r["clients"]][-1]["clients"]}
+    names = sorted(set(last) & set(base["local"]), key=lambda n: base["local"][n]["mae"])
+    rows = [("local only", [base["local"][n]["mae"] for n in names]),
+            ("centralized (pooled)", [base["centralized"][n]["mae"] for n in names]),
+            ("FedAvg + local fine-tune", [last[n]["mae-ft"] for n in names])]
+    fig, ax = plt.subplots(figsize=(11, 4.4))
+    x = np.arange(len(names))
+    for (label, values), color in zip(rows, SERIES):
+        ax.scatter(x, values, s=34, color=color, edgecolors=SURFACE, linewidths=1, label=f"{label}  ·  median {np.median(values):.0f} Wh", zorder=3)
+    ax.set_xticks(x)
+    ax.set_xticklabels(names, rotation=90, fontsize=7)
+    ax.set_ylabel("MAE per 15-min slot (Wh), held-out")
+    ax.set_title("Use case (b): forecast error per charging station (sorted by local-only error)")
+    ax.legend(loc="upper left")
+    fig.tight_layout()
+    save(fig, "cs_per_station.png")
+
+
 def main() -> None:
     data_dir = Path("data")
     classes = vehicle_classes(data_dir)
@@ -243,6 +306,8 @@ def main() -> None:
     fig_head_to_head(classes)
     fig_privacy()
     fig_dropout()
+    fig_cs_demand(data_dir / "cs")
+    fig_cs_per_station()
 
 
 if __name__ == "__main__":
