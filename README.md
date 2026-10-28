@@ -9,9 +9,7 @@ This is **v2** of the code from my master thesis,
 which Flower features on its [automotive page](https://flower.ai/industries/automotive).
 The original code is preserved unchanged at tag [`v1.0-thesis`](../../tree/v1.0-thesis).
 
-<!-- fleet animation: added once rendered
 ![Simulated fleet: cars coloured by battery class, white rings while charging, grey triangles are charging stations](docs/media/fleet.gif)
--->
 
 All data is **simulated** with [SUMO](https://eclipse.dev/sumo/) on OpenStreetMap roads. No real vehicle data is used.
 
@@ -92,6 +90,22 @@ trip lengths make the amount of data per client vary by more than 10× (right).
 | 1.0 | −0.22 | 12 (26) |
 | 2.0 | −0.41 | 4 (12) |
 
+### Use case (b): charging-station demand
+
+![Energy delivered per station and 15-minute slot over two simulated days, grouped by area, with the fleet total below](docs/media/cs_demand.png)
+
+Demand follows the daily traffic profile (quiet nights, morning and evening peaks) and differs strongly
+between areas, so the 50 stations are non-IID too.
+
+| 50 stations, held-out data | Median R² | Median error per 15-min slot |
+|---|---|---|
+| Centralized (all data pooled; not private) | 0.50 | 1,257 Wh |
+| **FedAvg, global model** | **0.43** | **1,432 Wh** |
+| FedAvg + local fine-tuning | 0.38 | 1,455 Wh (better than local-only for 80% of stations) |
+| Local only | 0.38 | 1,548 Wh |
+
+![Forecast error per charging station for local-only, centralized and personalized FL](docs/media/cs_per_station.png)
+
 ### What the results say
 
 - **A shared global model alone is not enough for a non-IID fleet.** FedAvg's global model trails each
@@ -111,6 +125,11 @@ trip lengths make the amount of data per client vary by more than 10× (right).
   only slows training. (v1 claimed it "outperforms FedAvg"; it was never compared.)
 - **Privacy is expensive at this data size.** Each car has a few hundred training windows. Single-digit
   ε needs σ ≥ 2, and by then the model is worse than predicting the mean.
+- **Personalization is not automatically better.** For charging stations the plain global FedAvg model
+  wins (1,432 vs 1,455 Wh for the fine-tuned one): each station has only ~130 training windows, so
+  fine-tuning overfits, while the EVs have more data each and far more heterogeneous physics.
+- **Station demand is only partly predictable from the last hour.** Arrivals are random; even the
+  centralized model reaches a median R² of 0.50. Time-of-day features are the obvious next step.
 
 ## v1 → v2: what changed and why
 
@@ -123,7 +142,7 @@ and [`tests/test_v1_regressions.py`](tests/test_v1_regressions.py) pins the fixe
 | **EV task** | Target (remaining capacity) was close to a linear function of an input (cumulative energy); "LSTM" saw sequences of length 1. | Real 60-step sequences; no cumulative input; the future energy is the target, never an input. |
 | **Charging-station evaluation** | Evaluated on the full series, training part included. | Chronological split with a gap; only the held-out part is scored. |
 | **Charging-station energy** | Summed `partialCharge`, a running total per session, which overcounts. | Per-step `energyCharged`. |
-| **Charging-station data** | Cars only charged while driving over a 10 m station (~1 s per pass). | Half of the trips detour to a charger and park there for 10–45 min (off the lane, so they don't block traffic). |
+| **Charging-station data** | Cars only charged while driving over a 10 m station (~1 s per pass). | Half of the trips detour to a charger and park there for 10–45 min (off the lane, so they don't block traffic); departures follow a daily profile with rush hours; stations are named after places inside the simulated area. |
 | **Baselines** | Local only. | Local and centralized, on identical splits. |
 | **Fault tolerance** | Failures came from an `UnboundLocalError`; never compared with FedAvg. | Explicit failures, seeded dropout injection, head-to-head comparison. |
 | **Aggregate metric** | Sample-weighted mean of per-client R² (one bad client dominates). | Medians and share of clients above a threshold. |
