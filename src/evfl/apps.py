@@ -4,6 +4,7 @@ Each simulated SuperNode is one client: one EV (use case a) or one charging
 station (use case b). `partition-id` from the node config picks which one.
 """
 
+import copy
 import json
 import random
 import time
@@ -17,7 +18,7 @@ from flwr.serverapp import Grid, ServerApp
 
 from evfl.data import client_ids, client_loaders, target_scale
 from evfl.model import build_model
-from evfl.strategy import EVFedAvg, FaultTolerantFedAvg
+from evfl.strategy import EVFedAdam, EVFedAvg, FaultTolerantFedAvg
 from evfl.train import epsilon_of, evaluate, train, train_dp
 
 
@@ -37,7 +38,9 @@ class RunConfig:
     batch_size: int = 32
     fraction_train: float = 0.5
     fraction_evaluate: float = 1.0
-    strategy: str = "fedavg"  # or "fault-tolerant"
+    strategy: str = "fedavg"  # "fedavg", "fedadam" or "fault-tolerant"
+    server_lr: float = 0.01  # FedAdam only
+    finetune_epochs: int = 0  # >0 also reports a personalized score (global model fine-tuned locally)
     min_completion_rate: float = 0.5
     dropout: float = 0.0  # probability that a sampled client fails in a round
     dp_noise: float = 0.0  # noise multiplier; 0 disables DP
@@ -90,9 +93,17 @@ def make_client_app(cfg: RunConfig) -> ClientApp:
 
     @app.evaluate()
     def evaluate_fn(msg: Message, context: Context) -> Message:
-        pid, model, _, test_loader = setup(msg, context)
+        pid, model, train_loader, test_loader = setup(msg, context)
         metrics = evaluate(model, test_loader, target_scale(cfg.kind))
         metrics["partition-id"] = pid
+        if cfg.finetune_epochs > 0:
+            # Personalized score: the global model briefly fine-tuned on this client's own
+            # training split. The fine-tuned copy stays on the client and is never sent back.
+            torch.manual_seed(cfg.seed + pid)
+            personal = copy.deepcopy(model)
+            train(personal, train_loader, cfg.finetune_epochs, cfg.lr)
+            tuned = evaluate(personal, test_loader, target_scale(cfg.kind))
+            metrics.update({f"{k}-ft": v for k, v in tuned.items() if k != "num-examples"})
         if cfg.dp and "dp" in context.state.config_records:
             state = context.state.config_records["dp"]
             metrics["epsilon"] = epsilon_of(list(zip(state["noise"], state["rate"], state["steps"])), cfg.dp_delta)
@@ -118,6 +129,8 @@ def make_server_app(cfg: RunConfig) -> ServerApp:
         if cfg.strategy == "fault-tolerant":
             strategy = FaultTolerantFedAvg(**common, min_completion_rate_fit=cfg.min_completion_rate,
                                            min_completion_rate_evaluate=cfg.min_completion_rate)
+        elif cfg.strategy == "fedadam":
+            strategy = EVFedAdam(**common, eta=cfg.server_lr, eta_l=cfg.lr)
         else:
             strategy = EVFedAvg(**common)
 
