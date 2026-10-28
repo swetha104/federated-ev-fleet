@@ -11,7 +11,7 @@ from logging import INFO, WARNING
 
 from flwr.app import ArrayRecord, Message, MetricRecord, RecordDict
 from flwr.common.logger import log
-from flwr.serverapp.strategy import FedAvg
+from flwr.serverapp.strategy import FedAdam, FedAvg
 from flwr.serverapp.strategy.strategy_utils import aggregate_metricrecords
 
 
@@ -83,3 +83,7 @@ class FaultTolerantFedAvg(EVFedAvg):
             self.client_metrics[server_round] = []
             return None
         return super().aggregate_evaluate(server_round, replies)
+
+
+class EVFedAdam(EVFedAvg, FedAdam):
+    """FedAdam (server-side Adam on the averaged update) with the same per-client bookkeeping."""
