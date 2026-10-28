@@ -87,3 +87,15 @@ def test_r2_is_nan_not_crash_for_constant_target():
     loader = DataLoader(TensorDataset(torch.randn(10, 4, 1), torch.zeros(10, 1)), batch_size=10)
     metrics = evaluate(build_model("cs"), loader, scale=1.0)
     assert np.isnan(metrics["r2"]) and metrics["mae"] >= 0
+
+
+def test_dp_epsilon_is_reported_even_before_training():
+    """Untrained clients must still send `epsilon`, or Flower refuses to aggregate mixed metric keys."""
+    from flwr.app import ConfigRecord, RecordDict
+
+    from evfl.apps import epsilon_so_far
+
+    state = RecordDict()
+    assert epsilon_so_far(state, 1e-4) == 0.0
+    state.config_records["dp"] = ConfigRecord({"noise": [1.0], "rate": [0.25], "steps": [12]})
+    assert epsilon_so_far(state, 1e-4) > 0
