@@ -3,6 +3,8 @@
 Federated learning (FL) on a simulated electric-vehicle fleet in Stuttgart. Each car and each charging
 station trains on its own data, and only model weights leave the device.
 
+![Centralized learning uploads every car's raw driving data to one server; in federated learning each car and charging station trains locally and only model weights travel to the server, which averages them](docs/media/fl_vs_centralized.svg)
+
 This is **v2** of the code from my master thesis,
 *"Towards Production-ready End-to-end Federated Learning for Automotive Applications"*
 (University of Stuttgart, 2022, [public record](https://elib.uni-stuttgart.de/items/1d446a31-e467-4197-8ac2-7fa6e222ee99)),

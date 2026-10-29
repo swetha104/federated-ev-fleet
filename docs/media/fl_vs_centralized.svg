@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 470" width="1000" height="470" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Centralized learning vs federated learning on an EV fleet</title>
+  <defs>
+    <marker id="head-raw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#eb6834"/>
+    </marker>
+    <marker id="head-w" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2a78d6"/>
+    </marker>
+    <!-- EV, 80 x 44 -->
+    <symbol id="car" viewBox="0 0 80 44">
+      <path d="M14 17 L25 5 H53 L66 17 Z" fill="#cfd8e3"/>
+      <path d="M27 8 H38 V16 H19 Z M41 8 H52 L61 16 H41 Z" fill="#ffffff"/>
+      <rect x="2" y="16" width="76" height="18" rx="7" fill="#59636e"/>
+      <rect x="68" y="21" width="8" height="4" rx="2" fill="#eda100"/>
+      <circle cx="19" cy="35" r="7.5" fill="#1f2328"/><circle cx="19" cy="35" r="3" fill="#d0d7de"/>
+      <circle cx="61" cy="35" r="7.5" fill="#1f2328"/><circle cx="61" cy="35" r="3" fill="#d0d7de"/>
+    </symbol>
+    <!-- charging station, 36 x 60 -->
+    <symbol id="station" viewBox="0 0 36 60">
+      <rect x="4" y="2" width="26" height="54" rx="5" fill="#1baf7a"/>
+      <rect x="8" y="7" width="18" height="12" rx="2" fill="#e7f6f0"/>
+      <path d="M19 24 L12 37 H17 L15 48 L23 33 H18 Z" fill="#ffffff"/>
+      <rect x="0" y="54" width="34" height="5" rx="2" fill="#59636e"/>
+    </symbol>
+    <!-- charging badge -->
+    <symbol id="bolt" viewBox="0 0 20 20">
+      <circle cx="10" cy="10" r="9.5" fill="#1baf7a"/>
+      <path d="M11 3 L5.5 11 H9.5 L8.5 17 L14.5 8.5 H10.5 Z" fill="#ffffff"/>
+    </symbol>
+    <!-- local dataset -->
+    <symbol id="data" viewBox="0 0 24 28">
+      <ellipse cx="12" cy="5" rx="10" ry="4" fill="#f7c8b3" stroke="#eb6834" stroke-width="1.5"/>
+      <path d="M2 5 V22 C2 27 22 27 22 22 V5" fill="#fdeee7" stroke="#eb6834" stroke-width="1.5"/>
+      <path d="M2 11 C2 15 22 15 22 11 M2 17 C2 21 22 21 22 17" fill="none" stroke="#eb6834" stroke-width="1.2"/>
+      <ellipse cx="12" cy="5" rx="10" ry="4" fill="#f7c8b3" stroke="#eb6834" stroke-width="1.5"/>
+    </symbol>
+    <!-- model weights: tiny network -->
+    <symbol id="model" viewBox="0 0 30 24">
+      <path d="M5 5 L15 12 L5 19 M15 12 L25 5 M15 12 L25 19 M5 5 L25 19 M5 19 L25 5" stroke="#2a78d6" stroke-width="1.4" fill="none"/>
+      <circle cx="5" cy="5" r="3.2" fill="#2a78d6"/><circle cx="5" cy="19" r="3.2" fill="#2a78d6"/>
+      <circle cx="15" cy="12" r="3.2" fill="#2a78d6"/>
+      <circle cx="25" cy="5" r="3.2" fill="#2a78d6"/><circle cx="25" cy="19" r="3.2" fill="#2a78d6"/>
+    </symbol>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="470" rx="16" fill="#fcfcfb"/>
+
+  <!-- ================= Centralized ================= -->
+  <rect x="16" y="16" width="476" height="438" rx="12" fill="#ffffff" stroke="#e4e6ea"/>
+  <text x="254" y="50" text-anchor="middle" font-size="21" font-weight="700" fill="#1f2328">Centralized learning</text>
+
+  <rect x="174" y="78" width="160" height="80" rx="12" fill="#fdeee7" stroke="#eb6834" stroke-width="2"/>
+  <use href="#data" xlink:href="#data" x="190" y="96" width="24" height="28"/>
+  <use href="#data" xlink:href="#data" x="206" y="104" width="24" height="28"/>
+  <use href="#data" xlink:href="#data" x="222" y="96" width="24" height="28"/>
+  <use href="#model" xlink:href="#model" x="268" y="98" width="45" height="36"/>
+  <text x="254" y="150" text-anchor="middle" font-size="12.5" fill="#59636e">server stores all data</text>
+
+  <!-- raw data flowing up -->
+  <path d="M85 290 C85 220 160 180 196 162" fill="none" stroke="#eb6834" stroke-width="2.5" marker-end="url(#head-raw)"/>
+  <path d="M215 290 C215 236 240 196 250 166" fill="none" stroke="#eb6834" stroke-width="2.5" marker-end="url(#head-raw)"/>
+  <path d="M410 290 C410 220 348 180 312 162" fill="none" stroke="#eb6834" stroke-width="2.5" marker-end="url(#head-raw)"/>
+  <use href="#data" xlink:href="#data" x="104" y="204" width="18" height="21"/>
+  <use href="#data" xlink:href="#data" x="232" y="214" width="18" height="21"/>
+  <use href="#data" xlink:href="#data" x="378" y="200" width="18" height="21"/>
+  <text x="282" y="250" font-size="13" font-weight="600" fill="#c4521f">raw driving data</text>
+
+  <use href="#car" xlink:href="#car" x="45" y="300" width="80" height="44"/>
+  <use href="#car" xlink:href="#car" x="175" y="300" width="80" height="44"/>
+  <use href="#car" xlink:href="#car" x="318" y="309" width="64" height="35"/>
+  <use href="#station" xlink:href="#station" x="392" y="286" width="36" height="60"/>
+  <path d="M379 324 C386 342 392 342 397 328" fill="none" stroke="#1baf7a" stroke-width="2.5"/>
+  <use href="#bolt" xlink:href="#bolt" x="341" y="282" width="18" height="18"/>
+  <text x="85" y="366" text-anchor="middle" font-size="12.5" fill="#59636e">EV</text>
+  <text x="215" y="366" text-anchor="middle" font-size="12.5" fill="#59636e">EV</text>
+  <text x="373" y="366" text-anchor="middle" font-size="12.5" fill="#59636e">EV at a charging station</text>
+
+  <text x="254" y="408" text-anchor="middle" font-size="14.5" font-weight="600" fill="#1f2328">Every trip is uploaded to one place</text>
+  <text x="254" y="432" text-anchor="middle" font-size="13" fill="#59636e">location and driving behaviour leave the car</text>
+
+  <!-- ================= Federated ================= -->
+  <rect x="508" y="16" width="476" height="438" rx="12" fill="#ffffff" stroke="#e4e6ea"/>
+  <text x="746" y="50" text-anchor="middle" font-size="21" font-weight="700" fill="#1f2328">Federated learning</text>
+
+  <rect x="666" y="78" width="160" height="80" rx="12" fill="#eaf2fc" stroke="#2a78d6" stroke-width="2"/>
+  <use href="#model" xlink:href="#model" x="723" y="92" width="45" height="36"/>
+  <text x="746" y="150" text-anchor="middle" font-size="12.5" fill="#59636e">averages the weights</text>
+
+  <!-- weights down (solid) and up (dashed) -->
+  <path d="M676 162 C636 190 576 220 566 282" fill="none" stroke="#2a78d6" stroke-width="2.5" marker-end="url(#head-w)"/>
+  <path d="M586 282 C596 228 660 196 692 166" fill="none" stroke="#2a78d6" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#head-w)"/>
+  <path d="M738 164 L712 282" fill="none" stroke="#2a78d6" stroke-width="2.5" marker-end="url(#head-w)"/>
+  <path d="M732 282 L756 168" fill="none" stroke="#2a78d6" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#head-w)"/>
+  <path d="M816 162 C852 190 900 220 910 278" fill="none" stroke="#2a78d6" stroke-width="2.5" marker-end="url(#head-w)"/>
+  <path d="M890 278 C880 226 832 196 800 166" fill="none" stroke="#2a78d6" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#head-w)"/>
+  <rect x="592" y="206" width="104" height="22" rx="11" fill="#ffffff"/>
+  <text x="644" y="221" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f5fae">① global model</text>
+  <rect x="770" y="206" width="112" height="22" rx="11" fill="#ffffff"/>
+  <text x="826" y="221" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1f5fae">③ weights only</text>
+
+  <!-- clients, each keeps its data -->
+  <use href="#car" xlink:href="#car" x="536" y="300" width="80" height="44"/>
+  <use href="#data" xlink:href="#data" x="620" y="314" width="18" height="21"/>
+  <use href="#car" xlink:href="#car" x="682" y="300" width="80" height="44"/>
+  <use href="#data" xlink:href="#data" x="766" y="314" width="18" height="21"/>
+  <use href="#car" xlink:href="#car" x="808" y="309" width="64" height="35"/>
+  <use href="#station" xlink:href="#station" x="882" y="286" width="36" height="60"/>
+  <path d="M869 324 C876 342 882 342 887 328" fill="none" stroke="#1baf7a" stroke-width="2.5"/>
+  <use href="#bolt" xlink:href="#bolt" x="831" y="282" width="18" height="18"/>
+  <use href="#data" xlink:href="#data" x="924" y="314" width="18" height="21"/>
+  <text x="576" y="366" text-anchor="middle" font-size="12.5" fill="#59636e">EV</text>
+  <text x="722" y="366" text-anchor="middle" font-size="12.5" fill="#59636e">EV</text>
+  <text x="866" y="366" text-anchor="middle" font-size="12.5" fill="#59636e">EV at a charging station</text>
+  <text x="746" y="388" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1baf7a">② each one trains on its own data</text>
+
+  <text x="746" y="418" text-anchor="middle" font-size="14.5" font-weight="600" fill="#1f2328">Raw data never leaves the car or charger</text>
+  <text x="746" y="440" text-anchor="middle" font-size="13" fill="#59636e">④ the server averages the weights, then the next round starts</text>
+</svg>
