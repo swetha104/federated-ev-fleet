@@ -24,6 +24,63 @@ All data is **simulated** with [SUMO](https://eclipse.dev/sumo/) on OpenStreetMa
 
 Built on **Flower 1.42** (Message API, simulation runtime on Ray), **PyTorch** and **Opacus**.
 
+## How it works
+
+From map to results, every step is a script, so the whole pipeline reruns from scratch:
+
+```mermaid
+flowchart LR
+    subgraph sim["1 · Simulate — scenario/build.py"]
+        osm["OpenStreetMap<br/>Stuttgart area"] --> net["netconvert<br/>road network"]
+        net --> trips["randomTrips + duarouter<br/>daily profile, charging detours"]
+        trips --> sumo["SUMO<br/>7 EV models · 50 chargers"]
+        sumo --> csv[("ev.csv · cs.csv<br/>per-second signals")]
+    end
+
+    subgraph prep["2 · Per-client data — evfl/data.py"]
+        win["one client per EV / station<br/>sliding windows<br/>chronological split + gap"]
+    end
+
+    subgraph fl["3 · Federated training — Flower simulation"]
+        server["ServerApp<br/>FedAvg · FedAdam ·<br/>FaultTolerantFedAvg"]
+        clients["ClientApps × 50<br/>local LSTM training<br/>optional DP-SGD"]
+        server -- "global weights" --> clients
+        clients -- "weights + metrics" --> server
+    end
+
+    base["Baselines<br/>local-only · centralized"]
+
+    subgraph out["4 · Report — scripts/"]
+        res[("results.json<br/>baselines.json")] --> tables["summarize.py<br/>docs/results.md"]
+        res --> figs["figures.py<br/>docs/media/*.png"]
+    end
+
+    csv --> win
+    win --> clients
+    win --> base
+    server --> res
+    base --> res
+```
+
+One federated round (`evfl/apps.py`, `evfl/strategy.py`). Raw data never leaves a client; only weights
+and metrics do:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as ServerApp (strategy)
+    participant C as Sampled clients (50%)
+    participant A as All clients
+    S->>C: global weights + config
+    Note over C: train on own windows<br/>(DP-SGD: clip + noise, ε tracked across rounds)<br/>some may drop out
+    C-->>S: updated weights, example count, loss, ε
+    Note over S: FedAvg: weighted average of replies<br/>FaultTolerantFedAvg: skip the update if<br/>too few clients replied
+    S->>A: new global weights
+    Note over A: score on held-out windows<br/>optional: fine-tune a private copy, score again
+    A-->>S: MSE, MAE, R² (+ fine-tuned scores)
+    Note over S: per-client metrics saved per round
+```
+
 ## Quickstart
 
 ```bash
