@@ -634,6 +634,12 @@ viz = [
     { name = "pillow" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "flwr", extras = ["simulation"], specifier = ">=1.42,<2" },
@@ -649,6 +655,12 @@ requires-dist = [
     { name = "torch", marker = "sys_platform == 'linux'", specifier = ">=2.4", index = "https://download.pytorch.org/whl/cpu" },
 ]
 provides-extras = ["dev", "viz"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=9.2.0" },
+    { name = "ruff", specifier = ">=0.17.3" },
+]
 
 [[package]]
 name = "fastapi"
