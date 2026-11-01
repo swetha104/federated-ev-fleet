@@ -625,10 +625,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-]
 viz = [
     { name = "matplotlib" },
     { name = "pillow" },
@@ -649,12 +645,10 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2" },
     { name = "pillow", marker = "extra == 'viz'", specifier = ">=10" },
     { name = "pyproj", specifier = ">=3.6" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
     { name = "torch", marker = "sys_platform != 'linux'", specifier = ">=2.4" },
     { name = "torch", marker = "sys_platform == 'linux'", specifier = ">=2.4", index = "https://download.pytorch.org/whl/cpu" },
 ]
-provides-extras = ["dev", "viz"]
+provides-extras = ["viz"]
 
 [package.metadata.requires-dev]
 dev = [
