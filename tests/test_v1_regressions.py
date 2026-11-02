@@ -19,8 +19,15 @@ def fake_ev_csv(tmp_path, steps=400, vehicles=("0", "1")):
     rows = []
     for vid in vehicles:
         for t in range(steps):
-            rows.append({"time": float(t), "vehicle_id": vid, "speed": rng.uniform(0, 30),
-                         "acceleration": rng.uniform(-2, 2), "energyConsumed": rng.uniform(0, 5)})
+            rows.append(
+                {
+                    "time": float(t),
+                    "vehicle_id": vid,
+                    "speed": rng.uniform(0, 30),
+                    "acceleration": rng.uniform(-2, 2),
+                    "energyConsumed": rng.uniform(0, 5),
+                }
+            )
     pd.DataFrame(rows).to_csv(tmp_path / "ev.csv", index=False)
     return tmp_path
 
@@ -65,8 +72,16 @@ def test_dp_accounts_true_sampling_rate_and_accumulates_over_rounds():
     history = []
     epsilons = []
     for _ in range(3):  # three FL rounds for one client
-        _, eps, history = train_dp(build_model("ev", dp=True), loader, epochs=1, lr=0.01,
-                                   noise_multiplier=1.0, max_grad_norm=1.0, accountant_history=history, delta=1e-4)
+        _, eps, history = train_dp(
+            build_model("ev", dp=True),
+            loader,
+            epochs=1,
+            lr=0.01,
+            noise_multiplier=1.0,
+            max_grad_norm=1.0,
+            accountant_history=history,
+            delta=1e-4,
+        )
         epsilons.append(eps)
     assert all(rate == pytest.approx(50 / 200) for _, rate, _ in history)  # v1 passed 1/N while training full-batch
     assert sum(steps for *_, steps in history) == 3 * 4  # 3 rounds x 4 batches, merged by Opacus

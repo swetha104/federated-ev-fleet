@@ -85,13 +85,16 @@ def make_client_app(cfg: RunConfig) -> ClientApp:
             # The accountant history lives in the node's state, so epsilon accumulates over rounds.
             state = context.state.config_records.get("dp", ConfigRecord({"noise": [], "rate": [], "steps": []}))
             history = list(zip(state["noise"], state["rate"], state["steps"]))
-            loss, eps, history = train_dp(model, train_loader, cfg.local_epochs, cfg.lr,
-                                          cfg.dp_noise, cfg.dp_clip, history, cfg.dp_delta)
-            context.state.config_records["dp"] = ConfigRecord({
-                "noise": [float(h[0]) for h in history],
-                "rate": [float(h[1]) for h in history],
-                "steps": [int(h[2]) for h in history],
-            })
+            loss, eps, history = train_dp(
+                model, train_loader, cfg.local_epochs, cfg.lr, cfg.dp_noise, cfg.dp_clip, history, cfg.dp_delta
+            )
+            context.state.config_records["dp"] = ConfigRecord(
+                {
+                    "noise": [float(h[0]) for h in history],
+                    "rate": [float(h[1]) for h in history],
+                    "steps": [int(h[2]) for h in history],
+                }
+            )
             metrics["epsilon"] = eps
         else:
             loss = train(model, train_loader, cfg.local_epochs, cfg.lr)
@@ -136,8 +139,11 @@ def make_server_app(cfg: RunConfig) -> ServerApp:
             "min_available_nodes": cfg.num_clients,
         }
         if cfg.strategy == "fault-tolerant":
-            strategy = FaultTolerantFedAvg(**common, min_completion_rate_fit=cfg.min_completion_rate,
-                                           min_completion_rate_evaluate=cfg.min_completion_rate)
+            strategy = FaultTolerantFedAvg(
+                **common,
+                min_completion_rate_fit=cfg.min_completion_rate,
+                min_completion_rate_evaluate=cfg.min_completion_rate,
+            )
         elif cfg.strategy == "fedadam":
             strategy = EVFedAdam(**common, eta=cfg.server_lr, eta_l=cfg.lr)
         else:
@@ -164,14 +170,17 @@ def write_results(cfg: RunConfig, strategy: EVFedAvg, result, seconds: float) ->
         clients = [{**m, "client": ids[int(m["partition-id"])]} for m in strategy.client_metrics.get(rnd, [])]
         for c in clients:
             del c["partition-id"]
-        rounds.append({
-            "round": rnd,
-            "train": dict(result.train_metrics_clientapp.get(rnd, {})),
-            "evaluate": dict(result.evaluate_metrics_clientapp.get(rnd, {})),
-            "failures": strategy.failures.get(rnd, {}),
-            "clients": clients,
-        })
-    (out / "results.json").write_text(json.dumps(
-        {"config": asdict(cfg), "seconds": round(seconds, 2), "rounds": rounds}, indent=2, default=float))
+        rounds.append(
+            {
+                "round": rnd,
+                "train": dict(result.train_metrics_clientapp.get(rnd, {})),
+                "evaluate": dict(result.evaluate_metrics_clientapp.get(rnd, {})),
+                "failures": strategy.failures.get(rnd, {}),
+                "clients": clients,
+            }
+        )
+    (out / "results.json").write_text(
+        json.dumps({"config": asdict(cfg), "seconds": round(seconds, 2), "rounds": rounds}, indent=2, default=float)
+    )
     if result.arrays is not None:
         torch.save(result.arrays.to_torch_state_dict(), out / "model.pt")

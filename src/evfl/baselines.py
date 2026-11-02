@@ -48,14 +48,18 @@ def main() -> None:
         local[cid] = evaluate(model, test_loader, scale)
 
     torch.manual_seed(args.seed)
-    pooled = DataLoader(ConcatDataset([tr.dataset for tr, _ in loaders.values()]), batch_size=args.batch_size, shuffle=True)
+    pooled = DataLoader(
+        ConcatDataset([tr.dataset for tr, _ in loaders.values()]), batch_size=args.batch_size, shuffle=True
+    )
     central_model = build_model(args.kind)
     train(central_model, pooled, args.epochs, args.lr)
     central = {cid: evaluate(central_model, te, scale) for cid, (_, te) in loaders.items()}
 
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "baselines.json").write_text(json.dumps({"config": vars(args), "local": local, "centralized": central}, indent=2))
+    (out / "baselines.json").write_text(
+        json.dumps({"config": vars(args), "local": local, "centralized": central}, indent=2)
+    )
     print(f"Results: {out}/baselines.json ({len(loaders)} usable clients)")
 
 

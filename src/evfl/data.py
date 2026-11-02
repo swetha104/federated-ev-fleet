@@ -67,8 +67,10 @@ class InsufficientDataError(RuntimeError):
 def load_ev(path: str) -> dict[str, np.ndarray]:
     df = pd.read_csv(path, usecols=["time", "vehicle_id", "speed", "acceleration", "energyConsumed"])
     df = df.sort_values(["vehicle_id", "time"])
-    return {str(vid): g[["speed", "acceleration", "energyConsumed"]].to_numpy(np.float32)
-            for vid, g in df.groupby("vehicle_id", sort=True)}
+    return {
+        str(vid): g[["speed", "acceleration", "energyConsumed"]].to_numpy(np.float32)
+        for vid, g in df.groupby("vehicle_id", sort=True)
+    }
 
 
 @lru_cache(maxsize=2)
@@ -100,18 +102,22 @@ def ev_windows(steps: np.ndarray, task: EVTask) -> tuple[np.ndarray, np.ndarray]
     xs, ys = [], []
     for start in range(0, len(steps) - length + 1, task.stride):
         seq = np.zeros((length, EV_FEATURES), np.float32)
-        seq[:, :3] = scaled[start:start + length]
-        seq[task.window:, 2] = 0.0  # future energy is the target, never an input
-        seq[task.window:, 3] = 1.0
+        seq[:, :3] = scaled[start : start + length]
+        seq[task.window :, 2] = 0.0  # future energy is the target, never an input
+        seq[task.window :, 3] = 1.0
         xs.append(seq)
-        ys.append(steps[start + task.window:start + length, 2].sum() / (ENERGY_STEP_SCALE * task.horizon))
+        ys.append(steps[start + task.window : start + length, 2].sum() / (ENERGY_STEP_SCALE * task.horizon))
     return np.asarray(xs, np.float32).reshape(-1, length, EV_FEATURES), np.asarray(ys, np.float32).reshape(-1, 1)
 
 
 def cs_windows(series: np.ndarray, task: CSTask) -> tuple[np.ndarray, np.ndarray]:
     scaled = series / CS_ENERGY_SCALE
-    xs = np.stack([scaled[i:i + task.lags] for i in range(len(scaled) - task.lags)]) if len(scaled) > task.lags else np.empty((0, task.lags))
-    ys = scaled[task.lags:]
+    xs = (
+        np.stack([scaled[i : i + task.lags] for i in range(len(scaled) - task.lags)])
+        if len(scaled) > task.lags
+        else np.empty((0, task.lags))
+    )
+    ys = scaled[task.lags :]
     return xs.astype(np.float32).reshape(-1, task.lags, 1), ys.astype(np.float32).reshape(-1, 1)
 
 
