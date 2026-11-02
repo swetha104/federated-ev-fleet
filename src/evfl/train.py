@@ -48,8 +48,12 @@ def train_dp(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # Opacus warns about secure RNG, which a simulation doesn't need
         model, optimizer, private_loader = engine.make_private(
-            module=model, optimizer=optimizer, data_loader=loader,
-            noise_multiplier=noise_multiplier, max_grad_norm=max_grad_norm, poisson_sampling=True,
+            module=model,
+            optimizer=optimizer,
+            data_loader=loader,
+            noise_multiplier=noise_multiplier,
+            max_grad_norm=max_grad_norm,
+            poisson_sampling=True,
         )
     loss_fn = nn.MSELoss()
     model.train()
@@ -87,9 +91,9 @@ def evaluate(model: nn.Module, loader: DataLoader, scale: float) -> dict[str, fl
     err = p - y
     ss_tot = float(((y - y.mean()) ** 2).sum())
     return {
-        "mse": float((err ** 2).mean()),
+        "mse": float((err**2).mean()),
         "mae": float(np.abs(err).mean()),
         # Undefined when the target is constant over the test period (e.g. an idle station).
-        "r2": 1.0 - float((err ** 2).sum()) / ss_tot if ss_tot > 0 else float("nan"),
+        "r2": 1.0 - float((err**2).sum()) / ss_tot if ss_tot > 0 else float("nan"),
         "num-examples": len(y),
     }

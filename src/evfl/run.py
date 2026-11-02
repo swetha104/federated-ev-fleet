@@ -1,8 +1,8 @@
 """Run one federated experiment in Flower's simulation runtime.
 
-    python -m evfl.run --kind ev --num-clients 50 --rounds 10 --out-dir outputs/ev-fedavg
-    python -m evfl.run --kind cs --strategy fault-tolerant --dropout 0.3
-    python -m evfl.run --kind ev --dp-noise 1.0 --dp-clip 1.0
+python -m evfl.run --kind ev --num-clients 50 --rounds 10 --out-dir outputs/ev-fedavg
+python -m evfl.run --kind cs --strategy fault-tolerant --dropout 0.3
+python -m evfl.run --kind ev --dp-noise 1.0 --dp-clip 1.0
 """
 
 import argparse

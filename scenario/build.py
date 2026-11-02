@@ -46,8 +46,32 @@ DISTRICTS = {
 }
 
 # Relative trips per hour of day (weekday shape: night trough, morning and evening peaks).
-DAILY_PROFILE = [0.15, 0.10, 0.08, 0.08, 0.12, 0.30, 0.70, 1.00, 0.95, 0.70, 0.60, 0.65,
-                 0.70, 0.70, 0.75, 0.85, 0.95, 1.00, 0.85, 0.60, 0.45, 0.35, 0.25, 0.20]
+DAILY_PROFILE = [
+    0.15,
+    0.10,
+    0.08,
+    0.08,
+    0.12,
+    0.30,
+    0.70,
+    1.00,
+    0.95,
+    0.70,
+    0.60,
+    0.65,
+    0.70,
+    0.70,
+    0.75,
+    0.85,
+    0.95,
+    1.00,
+    0.85,
+    0.60,
+    0.45,
+    0.35,
+    0.25,
+    0.20,
+]
 
 
 def hourly_periods(mean_period: float, end: int) -> list[float]:
@@ -120,12 +144,21 @@ def place_charging_stations(net_path: Path, out_path: Path, count: int, seed: in
         cs_id = f"{district}_cs_{per_district[district]}"
         per_district[district] += 1
         start = rng.uniform(5, lane.getLength() - 15)
-        ET.SubElement(root, "chargingStation", {
-            "id": cs_id, "lane": lane.getID(),
-            "startPos": f"{start:.2f}", "endPos": f"{start + 10:.2f}",
-            "friendlyPos": "true", "power": "22000", "efficiency": "0.95",
-            "chargeInTransit": "1", "chargeDelay": "0",
-        })
+        ET.SubElement(
+            root,
+            "chargingStation",
+            {
+                "id": cs_id,
+                "lane": lane.getID(),
+                "startPos": f"{start:.2f}",
+                "endPos": f"{start + 10:.2f}",
+                "friendlyPos": "true",
+                "power": "22000",
+                "efficiency": "0.95",
+                "chargeInTransit": "1",
+                "chargeDelay": "0",
+            },
+        )
     ET.ElementTree(root).write(out_path, encoding="utf-8", xml_declaration=True)
 
 
@@ -135,8 +168,10 @@ def add_charging_stops(trips_path: Path, stations_path: Path, fraction: float, d
     Without this, EVs only charge in transit while driving over a 10 m station
     (about one second per pass), which leaves the stations with almost no demand.
     """
-    stations = [(cs.get("id"), cs.get("lane").rsplit("_", 1)[0])
-                for cs in ET.parse(stations_path).getroot().iter("chargingStation")]
+    stations = [
+        (cs.get("id"), cs.get("lane").rsplit("_", 1)[0])
+        for cs in ET.parse(stations_path).getroot().iter("chargingStation")
+    ]
     rng = random.Random(seed)
     tree = ET.parse(trips_path)
     for trip in tree.getroot().iter("trip"):
@@ -144,15 +179,27 @@ def add_charging_stops(trips_path: Path, stations_path: Path, fraction: float, d
             cs_id, edge = rng.choice(stations)
             trip.set("via", edge)
             # parking="true" takes the car off the lane; on-lane stops of 10-45 min jam the whole city.
-            ET.SubElement(trip, "stop", {"chargingStation": cs_id, "duration": str(rng.randint(*duration)), "parking": "true"})
+            ET.SubElement(
+                trip, "stop", {"chargingStation": cs_id, "duration": str(rng.randint(*duration)), "parking": "true"}
+            )
     tree.write(trips_path, encoding="utf-8", xml_declaration=True)
 
 
 def battery_to_csv(xml_path: Path, csv_path: Path) -> int:
     """Flatten SUMO battery-output (one row per vehicle per step) for use case (a)."""
-    fields = ["time", "vehicle_id", "speed", "acceleration", "energyConsumed",
-              "totalEnergyConsumed", "totalEnergyRegenerated", "actualBatteryCapacity",
-              "maximumBatteryCapacity", "chargingStationId", "energyCharged"]
+    fields = [
+        "time",
+        "vehicle_id",
+        "speed",
+        "acceleration",
+        "energyConsumed",
+        "totalEnergyConsumed",
+        "totalEnergyRegenerated",
+        "actualBatteryCapacity",
+        "maximumBatteryCapacity",
+        "chargingStationId",
+        "energyCharged",
+    ]
     rows = 0
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
@@ -183,8 +230,15 @@ def charging_to_csv(xml_path: Path, csv_path: Path) -> int:
         for station in ET.parse(xml_path).getroot().iter("chargingStation"):
             for vehicle in station.iter("vehicle"):
                 for step in vehicle.iter("step"):
-                    writer.writerow([station.get("id"), vehicle.get("id"), vehicle.get("type"),
-                                     step.get("time"), step.get("energyCharged")])
+                    writer.writerow(
+                        [
+                            station.get("id"),
+                            vehicle.get("id"),
+                            vehicle.get("type"),
+                            step.get("time"),
+                            step.get("energyCharged"),
+                        ]
+                    )
                     rows += 1
     return rows
 
@@ -196,14 +250,25 @@ def main() -> None:
     p.add_argument("--end", type=int, default=101000, help="last departure time in s (thesis: 101000)")
     p.add_argument("--period", type=float, default=100, help="s between departures (thesis: 100)")
     p.add_argument("--cs", type=int, default=50, help="number of charging stations")
-    p.add_argument("--charge-fraction", type=float, default=0.0,
-                   help="share of trips that detour to a charging station and stop there")
+    p.add_argument(
+        "--charge-fraction",
+        type=float,
+        default=0.0,
+        help="share of trips that detour to a charging station and stop there",
+    )
     p.add_argument("--stop-min", type=int, default=600, help="shortest charging stop in s")
     p.add_argument("--stop-max", type=int, default=2700, help="longest charging stop in s")
-    p.add_argument("--no-battery-output", dest="battery_output", action="store_false",
-                   help="skip the per-step battery log (large); enough for the charging-station use case")
-    p.add_argument("--daily-profile", action="store_true",
-                   help="vary departures over the day (rush hours) instead of a constant --period")
+    p.add_argument(
+        "--no-battery-output",
+        dest="battery_output",
+        action="store_false",
+        help="skip the per-step battery log (large); enough for the charging-station use case",
+    )
+    p.add_argument(
+        "--daily-profile",
+        action="store_true",
+        help="vary departures over the day (rush hours) instead of a constant --period",
+    )
     p.add_argument("--seed", type=int, default=42)
     args = p.parse_args()
 
@@ -219,35 +284,94 @@ def main() -> None:
         fetch_osm(tuple(args.bbox), osm)
     if not net.exists():
         # Same netconvert options as the thesis (ch. 5.1).
-        run(["netconvert", "--osm-files", osm, "--output-file", net,
-             "--geometry.remove", "--roundabouts.guess", "--ramps.guess", "--junctions.join",
-             "--tls.guess-signals", "--tls.discard-simple", "--tls.join", "--no-warnings"])
+        run(
+            [
+                "netconvert",
+                "--osm-files",
+                osm,
+                "--output-file",
+                net,
+                "--geometry.remove",
+                "--roundabouts.guess",
+                "--ramps.guess",
+                "--junctions.join",
+                "--tls.guess-signals",
+                "--tls.discard-simple",
+                "--tls.join",
+                "--no-warnings",
+            ]
+        )
     if not stations.exists():
         place_charging_stations(net, stations, args.cs, args.seed, tools)
     if not routes.exists():
         periods = hourly_periods(args.period, args.end) if args.daily_profile else [args.period]
         # randomTrips splits [0, end) into equal intervals, one per period value: hours here.
         end = len(periods) * 3600 if args.daily_profile else args.end
-        trip_args = ["-n", net, "-o", trips, "-e", end, "--period", *periods, "--fringe-factor", 1,
-                     "--seed", args.seed, "--additional-file", HERE / "vehicles.add.xml",
-                     "--trip-attributes", 'type="typedist1"']
+        trip_args = [
+            "-n",
+            net,
+            "-o",
+            trips,
+            "-e",
+            end,
+            "--period",
+            *periods,
+            "--fringe-factor",
+            1,
+            "--seed",
+            args.seed,
+            "--additional-file",
+            HERE / "vehicles.add.xml",
+            "--trip-attributes",
+            'type="typedist1"',
+        ]
         if args.charge_fraction == 0:
             run([sys.executable, tools / "randomTrips.py", *trip_args, "-r", routes, "--validate"])
         else:
             run([sys.executable, tools / "randomTrips.py", *trip_args])
             add_charging_stops(trips, stations, args.charge_fraction, (args.stop_min, args.stop_max), args.seed)
-            run(["duarouter", "-n", net, "--route-files", trips, "-o", routes,
-                 "-a", f"{HERE / 'vehicles.add.xml'},{stations}", "--ignore-errors", "--no-warnings"])
+            run(
+                [
+                    "duarouter",
+                    "-n",
+                    net,
+                    "--route-files",
+                    trips,
+                    "-o",
+                    routes,
+                    "-a",
+                    f"{HERE / 'vehicles.add.xml'},{stations}",
+                    "--ignore-errors",
+                    "--no-warnings",
+                ]
+            )
 
     done_marker = battery_xml if args.battery_output else charging_xml
     if not done_marker.exists():
         # The route file already carries the vehicle types (randomTrips/duarouter copy them in).
         outputs = ["--battery-output", battery_xml, "--battery-output.precision", 4] if args.battery_output else []
         try:
-            run(["sumo", "-n", net, "-r", routes, "-a", stations, *outputs,
-                 "--chargingstations-output", charging_xml,
-                 "--device.battery.probability", 1, "--seed", args.seed,
-                 "--no-step-log", "--no-warnings", "--duration-log.statistics"])
+            run(
+                [
+                    "sumo",
+                    "-n",
+                    net,
+                    "-r",
+                    routes,
+                    "-a",
+                    stations,
+                    *outputs,
+                    "--chargingstations-output",
+                    charging_xml,
+                    "--device.battery.probability",
+                    1,
+                    "--seed",
+                    args.seed,
+                    "--no-step-log",
+                    "--no-warnings",
+                    "--duration-log.statistics",
+                ]
+            )
         except subprocess.CalledProcessError:
             # SUMO leaves truncated outputs behind; drop them so a re-run retries this step.
             battery_xml.unlink(missing_ok=True)

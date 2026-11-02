@@ -47,17 +47,24 @@ def station_positions(stations_path: Path, net_path: Path) -> list:
             lanes[el.get("id")] = el.get("shape").split()[0]
         elif el.tag == "edge":
             el.clear()
-    return [tuple(map(float, lanes[cs.get("lane")].split(",")))
-            for cs in ET.parse(stations_path).getroot().iter("chargingStation") if cs.get("lane") in lanes]
+    return [
+        tuple(map(float, lanes[cs.get("lane")].split(",")))
+        for cs in ET.parse(stations_path).getroot().iter("chargingStation")
+        if cs.get("lane") in lanes
+    ]
 
 
 # The 7 EV models in scenario/vehicles.add.xml, grouped by battery size into three
 # classes; dark-surface steps of the same palette as scripts/figures.py.
 CLASS_COLORS = {"small (32–39 kWh)": "#3987e5", "mid (58–64 kWh)": "#d95926", "large (77–80 kWh)": "#199e70"}
 TYPE_CLASS = {
-    "VW_eUp": "small (32–39 kWh)", "BMW_i3": "small (32–39 kWh)",
-    "VW_ID3": "mid (58–64 kWh)", "soulEV65": "mid (58–64 kWh)",
-    "VW_ID4": "large (77–80 kWh)", "Kia_EV6_GT": "large (77–80 kWh)", "SUV": "large (77–80 kWh)",
+    "VW_eUp": "small (32–39 kWh)",
+    "BMW_i3": "small (32–39 kWh)",
+    "VW_ID3": "mid (58–64 kWh)",
+    "soulEV65": "mid (58–64 kWh)",
+    "VW_ID4": "large (77–80 kWh)",
+    "Kia_EV6_GT": "large (77–80 kWh)",
+    "SUV": "large (77–80 kWh)",
 }
 
 
@@ -67,22 +74,47 @@ def record(data_dir: Path, begin: int, end: int, period: int) -> dict:
     env = {**os.environ, "SUMO_HOME": str(sumo_home)}
     with tempfile.TemporaryDirectory() as tmp:
         fcd = Path(tmp) / "fcd.xml"
-        subprocess.run([
-            "sumo", "-n", data_dir / "map.net.xml", "-r", data_dir / "routes.rou.xml",
-            "-a", data_dir / "charging_stations.add.xml", "--device.battery.probability", "1",
-            "--end", str(end), "--fcd-output", fcd, "--device.fcd.begin", str(begin), "--device.fcd.period", str(period),
-            "--fcd-output.params",
-            "device.battery.chargingStationId",
-            "--no-step-log", "--no-warnings",
-        ], check=True, env=env)
+        subprocess.run(
+            [
+                "sumo",
+                "-n",
+                data_dir / "map.net.xml",
+                "-r",
+                data_dir / "routes.rou.xml",
+                "-a",
+                data_dir / "charging_stations.add.xml",
+                "--device.battery.probability",
+                "1",
+                "--end",
+                str(end),
+                "--fcd-output",
+                fcd,
+                "--device.fcd.begin",
+                str(begin),
+                "--device.fcd.period",
+                str(period),
+                "--fcd-output.params",
+                "device.battery.chargingStationId",
+                "--no-step-log",
+                "--no-warnings",
+            ],
+            check=True,
+            env=env,
+        )
         frames = defaultdict(list)
         time = None
         for event, el in ET.iterparse(fcd, events=("start", "end")):
             if event == "start" and el.tag == "timestep":
                 time = float(el.get("time"))
             elif event == "end" and el.tag == "vehicle":
-                frames[time].append((float(el.get("x")), float(el.get("y")), el.get("type"),
-                                     el.get("device.battery.chargingStationId") != "NULL"))
+                frames[time].append(
+                    (
+                        float(el.get("x")),
+                        float(el.get("y")),
+                        el.get("type"),
+                        el.get("device.battery.chargingStationId") != "NULL",
+                    )
+                )
                 el.clear()
         return dict(sorted(frames.items()))
 
@@ -132,8 +164,10 @@ def main() -> None:
         cars.set_sizes([40 if charging else 16 for *_, charging in rows])
         charging = sum(c for *_, c in rows)
         clock = int(times[i])
-        title.set_text(f"Simulated Stuttgart fleet  {clock // 3600 % 24:02d}:{clock % 3600 // 60:02d}  "
-                       f"·  {len(rows)} EVs on the road  ·  {charging} charging")
+        title.set_text(
+            f"Simulated Stuttgart fleet  {clock // 3600 % 24:02d}:{clock % 3600 // 60:02d}  "
+            f"·  {len(rows)} EVs on the road  ·  {charging} charging"
+        )
         return cars, title
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
