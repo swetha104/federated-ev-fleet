@@ -60,18 +60,27 @@ class FaultTolerantFedAvg(EVFedAvg):
     `min_completion_rate_evaluate`, as Flower's original strategy did.
     """
 
-    def __init__(self, *args, min_completion_rate_fit: float = 0.5, min_completion_rate_evaluate: float = 0.5, **kwargs):
+    def __init__(
+        self, *args, min_completion_rate_fit: float = 0.5, min_completion_rate_evaluate: float = 0.5, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.min_completion_rate_fit = min_completion_rate_fit
         self.min_completion_rate_evaluate = min_completion_rate_evaluate
 
-    def aggregate_train(self, server_round: int, replies: Iterable[Message]) -> tuple[ArrayRecord | None, MetricRecord | None]:
+    def aggregate_train(
+        self, server_round: int, replies: Iterable[Message]
+    ) -> tuple[ArrayRecord | None, MetricRecord | None]:
         replies = list(replies)
         rate = _completion_rate(replies)
         if rate < self.min_completion_rate_fit:
             self.failures.setdefault(server_round, {})["train"] = sum(m.has_error() for m in replies)
-            log(WARNING, "Round %s: completion rate %.2f < %.2f, keeping the previous global model",
-                server_round, rate, self.min_completion_rate_fit)
+            log(
+                WARNING,
+                "Round %s: completion rate %.2f < %.2f, keeping the previous global model",
+                server_round,
+                rate,
+                self.min_completion_rate_fit,
+            )
             return None, None
         log(INFO, "Round %s: completion rate %.2f", server_round, rate)
         return super().aggregate_train(server_round, replies)
