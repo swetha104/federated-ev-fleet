@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-viz = ["matplotlib>=3.8", "pillow>=10"]  # scenario/render.py
+viz = ["matplotlib>=3.8", "pillow>=10"]  # scripts/figures.py, scenario/render.py
 
 [tool.setuptools.packages.find]
 where = ["src"]
