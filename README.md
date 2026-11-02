@@ -86,19 +86,20 @@ sequenceDiagram
 ## Quickstart
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,viz]"
+# Needs uv (brew install uv / see docs.astral.sh/uv). Creates .venv from uv.lock: Python 3.14,
+# exact package versions, CPU-only PyTorch on Linux.
+uv sync --extra viz
 
 # 1. Simulate the data (needs SUMO: brew install sumo / apt install sumo)
-python scenario/build.py --out data                                   # EVs, ~10 min
-python scenario/build.py --out data/cs --end 172800 --period 50 \
+uv run python scenario/build.py --out data                            # EVs, ~10 min
+uv run python scenario/build.py --out data/cs --end 172800 --period 50 \
        --charge-fraction 0.5 --no-battery-output --daily-profile      # charging stations, 2 days
 
 # 2. One federated run
-python -m evfl.run --kind ev --num-clients 50 --rounds 40 --local-epochs 5 --finetune-epochs 5
+uv run python -m evfl.run --kind ev --num-clients 50 --rounds 40 --local-epochs 5 --finetune-epochs 5
 
 # 3. Everything behind the results below, then the tables
-bash scripts/experiments.sh && python scripts/summarize.py
+bash scripts/experiments.sh && uv run python scripts/summarize.py
 ```
 
 ## Results
@@ -206,7 +207,7 @@ and [`tests/test_v1_regressions.py`](tests/test_v1_regressions.py) pins the fixe
 | **Fault tolerance** | Failures came from an `UnboundLocalError`; never compared with FedAvg. | Explicit failures, seeded dropout injection, head-to-head comparison. |
 | **Aggregate metric** | Sample-weighted mean of per-client R² (one bad client dominates). | Medians and share of clients above a threshold. |
 | **Data** | 6-row sample in the repo; network and a loader module missing. | `scenario/build.py` regenerates everything from OSM in one command. |
-| **Engineering** | Flower 1.0, hard-coded paths and client IDs, no tests. | Flower 1.42 Message API, CLI config, tests, CI. |
+| **Engineering** | Flower 1.0, hard-coded paths and client IDs, no tests. | Flower 1.42 Message API, CLI config, tests, CI; uv lockfile with exact versions and CPU-only PyTorch on Linux. |
 
 ## Repository layout
 

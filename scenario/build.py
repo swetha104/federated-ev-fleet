@@ -108,7 +108,7 @@ def fetch_osm(bbox: tuple, path: Path) -> None:
     tmp = path.with_suffix(".part")
     # Public Overpass servers are often busy; retry and fall back to a mirror.
     for attempt, server in enumerate(OVERPASS_SERVERS * 3):
-        req = urllib.request.Request(server, body, headers={"User-Agent": "fl-thesis-scenario/2.0"})
+        req = urllib.request.Request(server, body, headers={"User-Agent": "federated-ev-fleet-scenario/2.0"})
         try:
             with urllib.request.urlopen(req, timeout=600) as resp, open(tmp, "wb") as f:
                 shutil.copyfileobj(resp, f)
