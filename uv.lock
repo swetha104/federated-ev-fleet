@@ -638,7 +638,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "flwr", extras = ["simulation"], specifier = ">=1.42,<2" },
+    { name = "flwr", extras = ["simulation"], specifier = ">=1.43.0,<2" },
     { name = "matplotlib", marker = "extra == 'viz'", specifier = ">=3.8" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "opacus", specifier = ">=1.5" },
@@ -683,7 +683,7 @@ wheels = [
 
 [[package]]
 name = "flwr"
-version = "1.42.0"
+version = "1.43.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -692,7 +692,6 @@ dependencies = [
     { name = "cryptography" },
     { name = "fastapi" },
     { name = "grpcio" },
-    { name = "grpcio-health-checking" },
     { name = "httpx" },
     { name = "iterators" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -713,9 +712,9 @@ dependencies = [
     { name = "uv" },
     { name = "uvicorn", extra = ["standard"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/02/01ef753ea7198acfacb0208e85fae50ff7f3278a3764899081c67ab281b9/flwr-1.42.0.tar.gz", hash = "sha256:12b005e4c5083b1b0c74d66c95baf8f376078d86ef9ff1b4cac32afe5544b5f2", size = 752777, upload-time = "2026-10-22T15:42:09.746Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/aa/bd/e691b830c0c3d9260be6b2ff35f2110acfc16d950ba850e1cac47672b328/flwr-1.43.0.tar.gz", hash = "sha256:561535404083855f27e3e1753bcd06c45b7eb6836106f4e4ef790f9372fe1771", size = 716475, upload-time = "2026-11-04T16:52:54.529Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/65/aaa75a37c39933178b1c44637e15fdfb4e4dcea21d1bbcaaa04479c75445/flwr-1.42.0-py3-none-any.whl", hash = "sha256:c4e77a528ff1ba93b57c9bb8d04af3f14884f0c9a6f4325bd974f1f807510732", size = 1234506, upload-time = "2026-10-22T15:42:08.323Z" },
+    { url = "https://files.pythonhosted.org/packages/99/fc/18ed661d212d7906369ea7488cbaa36ffdd94092f8e232d31fdab49a7f05/flwr-1.43.0-py3-none-any.whl", hash = "sha256:0ceb3b06b632cc92e318221a4d9214f725f6ca4d1b963181e90ff55a94931b54", size = 1186900, upload-time = "2026-11-04T16:52:52.628Z" },
 ]
 
 [package.optional-dependencies]
@@ -940,19 +939,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/16/e1/e334cf7442c01892ed813563b21b2a8ab5b042e34f33ad76cf64526d1de8/grpcio-1.85.1-cp315-cp315-musllinux_1_2_x86_64.whl", hash = "sha256:7bc5de50374416223bc35332aa8185567ec065f86190ff0ca6e13176ed39a3b4", size = 8346563, upload-time = "2026-10-30T16:01:10.394Z" },
     { url = "https://files.pythonhosted.org/packages/66/bb/cf72913ce0baae1fed95445f1ba8ac309184ac16b4f20fb5f88219eff72c/grpcio-1.85.1-cp315-cp315-win32.whl", hash = "sha256:5740aedf1e6acde538d7b80a2507eb6ee0b8983c577a36890d27a0e2b62cc1eb", size = 4853404, upload-time = "2026-10-30T16:01:12.239Z" },
     { url = "https://files.pythonhosted.org/packages/ea/b8/b7cff7b9e1ff7b6a8d36a19ce8b9c575963e71fcbb3878b276cff6748b05/grpcio-1.85.1-cp315-cp315-win_amd64.whl", hash = "sha256:b32f39c56d22d2e8722eececd4376074d94e01595a29f4f944ae0b6cea1caa70", size = 5758584, upload-time = "2026-10-30T16:01:14.325Z" },
-]
-
-[[package]]
-name = "grpcio-health-checking"
-version = "1.81.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "grpcio" },
-    { name = "protobuf" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/65/46/6b6678b5a922765ae7637205bb6d0618a4da8b35f2ce6116f8bcff262370/grpcio_health_checking-1.81.1.tar.gz", hash = "sha256:ecc61480e25058a4a04e11e4ab6900ad7439b32e60a8ce4ece7d9f219221c85d", size = 17107, upload-time = "2026-06-11T12:58:49.632Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/87/174bbfb5613794862c45b5cdf567fcfb478ad5a3a7b594e11d998656b2f9/grpcio_health_checking-1.81.1-py3-none-any.whl", hash = "sha256:cbc6a4171825ec64389de2f062d296ba129a5c27eefd0dd55fa837909184bdf9", size = 19120, upload-time = "2026-06-11T12:58:38.008Z" },
 ]
 
 [[package]]
