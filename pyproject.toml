@@ -10,7 +10,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = [
-    "flwr[simulation]>=1.42,<2",
+    "flwr[simulation]>=1.43.0,<2",
     "torch>=2.4",
     "opacus>=1.5",
     "numpy>=1.26",
