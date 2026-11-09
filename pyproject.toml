@@ -14,7 +14,7 @@ dependencies = [
     "torch>=2.4",
     "opacus>=1.5",
     "numpy>=1.26",
-    "pandas>=2.2",
+    "pandas>=3.1.1",
     "pyproj>=3.6",  # sumolib's coordinate conversion in scenario/build.py
 ]
 
@@ -44,5 +44,5 @@ torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 [dependency-groups]
 dev = [
     "pytest>=9.2.0",
-    "ruff>=0.17.3",
+    "ruff>=0.17.4",
 ]
